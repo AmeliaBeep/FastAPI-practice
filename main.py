@@ -1,43 +1,44 @@
+# main.py
 from fastapi import FastAPI, HTTPException
-from pydantic import BaseModel
+from models import Book
+from typing import List
 
 app = FastAPI()
 
-# In-memory database (for demonstration purposes)
-items = []
+# In-memory database for demonstration purposes
+books = [
+    Book(id=1, title="Book 1", author="Author 1"),
+    Book(id=2, title="Book 2", author="Author 2"),
+]
 
-# Pydantic model for item data
-class Item(BaseModel):
-    name: str
-    description: str
+@app.get("/books/")
+async def read_books():
+    return books
 
-# Create an item
-@app.post("/items/", response_model=Item)
-async def create_item(item: Item):
-    items.append(item)
-    return item
+@app.post("/books/")
+async def create_book(book: Book):
+    books.append(book)
+    return book
 
-# Read an item
-@app.get("/items/{item_id}", response_model=Item)
-async def read_item(item_id: int):
-    if item_id < 0 or item_id >= len(items):
-        raise HTTPException(status_code=404, detail="Item not found")
-    return items[item_id]
+@app.get("/books/{book_id}")
+async def read_book(book_id: int):
+    for book in books:
+        if book.id == book_id:
+            return book
+    raise HTTPException(status_code=404, detail="Book not found")
 
-# Update an item
-@app.put("/items/{item_id}", response_model=Item)
-async def update_item(item_id: int, item: Item):
-    if item_id < 0 or item_id >= len(items):
-        raise HTTPException(status_code=404, detail="Item not found")
-    
-    items[item_id] = item
-    return item
+@app.put("/books/{book_id}")
+async def update_book(book_id: int, book: Book):
+    for i, existing_book in enumerate(books):
+        if existing_book.id == book_id:
+            books[i] = book
+            return book
+    raise HTTPException(status_code=404, detail="Book not found")
 
-# Delete an item
-@app.delete("/items/{item_id}", response_model=Item)
-async def delete_item(item_id: int):
-    if item_id < 0 or item_id >= len(items):
-        raise HTTPException(status_code=404, detail="Item not found")
-    
-    deleted_item = items.pop(item_id)
-    return deleted_item
+@app.delete("/books/{book_id}")
+async def delete_book(book_id: int):
+    for i, book in enumerate(books):
+        if book.id == book_id:
+            del books[i]
+            return {"message": "Book deleted successfully"}
+    raise HTTPException(status_code=404, detail="Book not found")
